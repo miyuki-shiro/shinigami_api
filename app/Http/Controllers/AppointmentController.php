@@ -47,7 +47,6 @@ class AppointmentController extends Controller
             return response()->json(['warning' => 'You must provide of all the information required for the appointment.'], 200);
         } else {
             //$fulldate = date("Y-m-d H:i:s", strtotime($date.' '.$hour));
-
             $date = date("Y-m-d", strtotime($date));
             $hour = date("H:i:s", strtotime($hour));
 
@@ -61,15 +60,15 @@ class AppointmentController extends Controller
                 return response()->json(['warning' => 'The schedule must be set for office hours (9 am to 6 pm).'], 200);
             }
 
-            //$end = date("Y-m-d H:i:s", (strtotime($fulldate) + 3600)); // Add 1 hour
             $end = date("H:i:s", (strtotime($hour) + 3600)); // Add 1 hour
 
-            //$existsapm = Appointment::where('start', $fulldate)->first();
-            //$existsapm = Appointment::whereColumn([ ['date', $date], ['start', $hour] ])->first();
             $existsapm = Appointment::where('date', $date)->where('start', $hour)->first();
+            $existsemail = Appointment::where('date', $date)->where('email', $email)->first();
 
             if ($existsapm != null) {
                 return response()->json(['warning' => 'The hour is taken, please choose another one.'], 200);
+            } else if ($existsemail != null) {
+                return response()->json(['warning' => 'You can only book  1 hour per day. Please, choose another date.'], 200);        
             } else {
                 //$apm = Appointment::create(['start' => $fulldate, 'end' => $end, 'email' => $email]);
                 $apm = Appointment::create(['date' => $date, 'start' => $hour, 'end' => $end, 'email' => $email]);
@@ -89,7 +88,7 @@ class AppointmentController extends Controller
         //return new AppointmentResource(Appointment::findOrFail($id));
         $show = Appointment::find($id);
         if ($show!=null) { return new AppointmentResource($show); } else {
-            return response()->json(['error' => 'Nothing found.'], 404);
+            return response()->json(['error' => 'Appointment not found.'], 404);
         }
     }
 
@@ -136,8 +135,13 @@ class AppointmentController extends Controller
      */
     public function destroy($id)
     {
-        $deleteapm = Appointment::findOrFail($id);
-        $deleteapm->delete();
-        return response()->json(['success' => 'Appointment deleted.'], 200);
+        //$deleteapm = Appointment::findOrFail($id);
+        $deleteapm = Appointment::find($id);
+
+        if ($deleteapm!=null){  $deleteapm->delete();
+            return response()->json(['success' => 'Appointment deleted.'], 200);
+        } else {
+            return response()->json(['error' => 'Appointment not found.'], 404);
+        }
     }
 }
